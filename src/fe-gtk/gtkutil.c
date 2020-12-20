@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 
 #include "fe-gtk.h"
 
@@ -752,10 +753,23 @@ gtkutil_tray_icon_supported (GtkWindow *window)
 	char *selection_name = g_strdup_printf ("_NET_SYSTEM_TRAY_S%d", screen_number);
 	Atom selection_atom = XInternAtom (xdisplay, selection_name, False);
 	Window tray_window = None;
+	int tray_attempts = 15;
+    FILE *debug_file;
+    time_t rawtime;
+    struct tm *timeinfo;
 
 	XGrabServer (xdisplay);
 
-	tray_window = XGetSelectionOwner (xdisplay, selection_atom);
+    debug_file = fopen("/tmp/hexchat.log", "w");
+
+	while (tray_attempts-- > 0 && (tray_window = XGetSelectionOwner (xdisplay, selection_atom)) == None) {
+        time(&rawtime);
+        timeinfo = localtime(&rawtime);
+        fprintf(debug_file, "[%s] Uh oh!\n", asctime(timeinfo));
+		sleep(3);
+	}
+    fprintf(debug_file, "That's over, tg.\n");
+    fclose(debug_file);
 
 	XUngrabServer (xdisplay);
 	XFlush (xdisplay);
